@@ -117,7 +117,7 @@ server.get("/messages", async (req, res) => {
     const { limit } = req.query
 
     try {
-    
+
         const messages = await db.collection("messages").find(
             {
                 $or: [{ to: 'Todos' },
@@ -134,38 +134,38 @@ server.get("/messages", async (req, res) => {
     }
 })
 server.post("/status", async (req, res) => {
-    const { user } = req.headers;
+    const { user } = req.headers
 
     const usuario = await db.collection("participants").findOne({ name: user })
-    if (!usuario) return res.sendStatus(404)
-
-    try {
-    } catch (err) {
-        console.log(err)
-        res.sendStatus(500)
+    if (!usuario) return res.status(404)
+    const verifica = await db.collection("participants").updateOne({ name: user }, { $set: { lastStatus: Date.now() } })
+    if (verifica === 0) {
+      return res.status(404)
+    } else {
+      return res.status(200)
     }
-})
+  })
 
 setInterval(async () => {
     try {
-      const allUsers = await db.collection("participants").find().toArray();
-  
-      for (let user of allUsers) {
-        if (dayjs().valueOf() - user.lastStatus > 10000) {
-          await db.collection("participants").deleteOne({ _id: user._id });
-          await db.collection("messages").insertOne({
-            from: user.name,
-            to: "Todos",
-            text: "saiu da sala...",
-            type: "status",
-            time: dayjs(Date.now()).format("HH:mm:ss"),
-          });
+        const allUsers = await db.collection("participants").find().toArray();
+
+        for (let user of allUsers) {
+            if (dayjs().valueOf() - user.lastStatus > 10000) {
+                await db.collection("participants").deleteOne({ _id: user._id });
+                await db.collection("messages").insertOne({
+                    from: user.name,
+                    to: "Todos",
+                    text: "saiu da sala...",
+                    type: "status",
+                    time: dayjs(Date.now()).format("HH:mm:ss"),
+                });
+            }
         }
-      }
     } catch (error) {
-      console.log(error);
+        console.log(error);
     }
-  }, 15000);
+}, 15000);
 
 server.listen(5000, () => {
     console.log('Servidor Funcionando!!!')
