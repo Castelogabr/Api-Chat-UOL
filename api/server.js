@@ -47,9 +47,9 @@ server.post("/participants", async (req, res) => {
         await db.collection("messages").insertOne({
             from: name,
             to: "Todos",
-            text: "entrou na sala...",
+            text: "entra na sala...",
             type: "status",
-            time: dayjs(Date.now()).format("HH:mm:ss")
+            time: dayjs().format("HH:mm:ss")
         })
         return res.sendStatus(201)
     }
@@ -59,6 +59,7 @@ server.post("/participants", async (req, res) => {
     }
 
 });
+
 server.get("/participants", async (req, res) => {
     try {
         const participants = await db.collection("participants").find().toArray()
@@ -69,6 +70,7 @@ server.get("/participants", async (req, res) => {
         res.sendStatus(500)
     }
 });
+
 server.post("/messages", async (req, res) => {
     const { to, text, type } = req.body;
     const { user } = req.headers;
@@ -86,7 +88,7 @@ server.post("/messages", async (req, res) => {
         to,
         text,
         type,
-        time: dayjs(Date.now()).format("HH:mm:ss"),
+        time: dayjs().format("HH:mm:ss"),
     }
 
     try {
@@ -123,7 +125,7 @@ server.get("/messages", async (req, res) => {
                 { from: user }]
             })
             .toArray()
-        return res.send(messages.slice(-limit))
+        return res.send(messages.reverse().slice(limit))
 
 
     } catch (err) {
@@ -131,6 +133,40 @@ server.get("/messages", async (req, res) => {
         res.sendStatus(500)
     }
 })
+server.post("/status", async (req, res) => {
+    const { user } = req.headers;
+
+    const usuario = await db.collection("participants").findOne({ name: user })
+    if (!usuario) return res.sendStatus(404)
+
+    try {
+    } catch (err) {
+        console.log(err)
+        res.sendStatus(500)
+    }
+})
+
+setInterval(async () => {
+    try {
+      const allUsers = await db.collection("participants").find().toArray();
+  
+      for (let user of allUsers) {
+        if (dayjs().valueOf() - user.lastStatus > 10000) {
+          await db.collection("participants").deleteOne({ _id: user._id });
+          await db.collection("messages").insertOne({
+            from: user.name,
+            to: "Todos",
+            text: "saiu da sala...",
+            type: "status",
+            time: dayjs(Date.now()).format("HH:mm:ss"),
+          });
+        }
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }, 15000);
+
 server.listen(5000, () => {
     console.log('Servidor Funcionando!!!')
 })
