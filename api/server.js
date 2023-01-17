@@ -99,7 +99,8 @@ server.post("/messages", async (req, res) => {
             const erros = validation.error.details.map((err) => {
                 return err.message
             })
-            return res.status(422).send(erros)
+            console.log(erros)
+            return res.sendStatus(422)
         }
 
         await db.collection("messages").insertOne(message)
